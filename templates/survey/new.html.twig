@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nowa ankieta{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <h1>Utwórz nową ankietę</h1>
+        {{ form_start(form) }}
+        {{ form_row(form.title) }}
+        <button class="btn btn-success mt-3">Zapisz ankietę</button>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}
