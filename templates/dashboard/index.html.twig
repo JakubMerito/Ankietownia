@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+    <h1>Dashboard</h1>
+
+    <div>
+        Zalogowany jako: <strong>{{ user.email }}</strong>
+        |
+        <a href="{{ path('app_logout') }}">Wyloguj</a>
+        |
+        <a href="{{ path('app_account') }}">Moje konto</a>
+        |
+        <a href="{{ path('app_survey_new') }}">Nowa ankieta</a>
+    </div>
+
+    <h2>Twoje ankiety:</h2>
+
+    {% if surveys is empty %}
+        <p>Nie masz jeszcze żadnych ankiet.</p>
+    {% else %}
+        <ul>
+            {% for survey in surveys %}
+                <li>{{ survey.title }} ({{ survey.createdAt|date('Y-m-d H:i') }})</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
