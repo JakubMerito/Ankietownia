@@ -22,7 +22,11 @@
     {% else %}
         <ul>
             {% for survey in surveys %}
-                <li>{{ survey.title }} ({{ survey.createdAt|date('Y-m-d H:i') }})</li>
+                <li>
+                    {{ survey.title }} ({{ survey.createdAt|date('Y-m-d H:i') }})
+                    |
+                    <a href="{{ path('app_survey_questions', {id: survey.id}) }}">Edytuj pytania</a>
+                </li>
             {% endfor %}
         </ul>
     {% endif %}

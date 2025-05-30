@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\QuestionTypeRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: QuestionTypeRepository::class)]
@@ -19,6 +21,14 @@ class QuestionType
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
+    #[ORM\OneToMany(mappedBy: 'questionType', targetEntity: Question::class)]
+    private Collection $questions;
+
+    public function __construct()
+    {
+        $this->questions = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -32,7 +42,6 @@ class QuestionType
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -44,6 +53,34 @@ class QuestionType
     public function setLabel(string $label): static
     {
         $this->label = $label;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Question>
+     */
+    public function getQuestions(): Collection
+    {
+        return $this->questions;
+    }
+
+    public function addQuestion(Question $question): static
+    {
+        if (!$this->questions->contains($question)) {
+            $this->questions->add($question);
+            $question->setQuestionType($this);
+        }
+
+        return $this;
+    }
+
+    public function removeQuestion(Question $question): static
+    {
+        if ($this->questions->removeElement($question)) {
+            if ($question->getQuestionType() === $this) {
+                $question->setQuestionType(null);
+            }
+        }
 
         return $this;
     }

@@ -13,28 +13,16 @@ class QuestionOption
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $text = null;
+
     #[ORM\ManyToOne(inversedBy: 'questionOptions')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Question $question = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $text = null;
-
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getQuestion(): ?Question
-    {
-        return $this->question;
-    }
-
-    public function setQuestion(?Question $question): static
-    {
-        $this->question = $question;
-
-        return $this;
     }
 
     public function getText(): ?string
@@ -45,7 +33,17 @@ class QuestionOption
     public function setText(string $text): static
     {
         $this->text = $text;
+        return $this;
+    }
 
+    public function getQuestion(): ?Question
+    {
+        return $this->question;
+    }
+
+    public function setQuestion(?Question $question): static
+    {
+        $this->question = $question;
         return $this;
     }
 }

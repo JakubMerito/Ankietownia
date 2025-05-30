@@ -15,14 +15,17 @@ class Question
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $text = null;
+
     #[ORM\ManyToOne(inversedBy: 'questions')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Survey $survey = null;
 
-    /**
-     * @var Collection<int, QuestionOption>
-     */
-    #[ORM\OneToMany(targetEntity: QuestionOption::class, mappedBy: 'question', orphanRemoval: true)]
+    #[ORM\ManyToOne(inversedBy: 'questions')]
+    private ?QuestionType $questionType = null;
+
+    #[ORM\OneToMany(mappedBy: 'question', targetEntity: QuestionOption::class, cascade: ['remove'])]
     private Collection $questionOptions;
 
     public function __construct()
@@ -35,6 +38,17 @@ class Question
         return $this->id;
     }
 
+    public function getText(): ?string
+    {
+        return $this->text;
+    }
+
+    public function setText(string $text): static
+    {
+        $this->text = $text;
+        return $this;
+    }
+
     public function getSurvey(): ?Survey
     {
         return $this->survey;
@@ -43,7 +57,17 @@ class Question
     public function setSurvey(?Survey $survey): static
     {
         $this->survey = $survey;
+        return $this;
+    }
 
+    public function getQuestionType(): ?QuestionType
+    {
+        return $this->questionType;
+    }
+
+    public function setQuestionType(?QuestionType $questionType): static
+    {
+        $this->questionType = $questionType;
         return $this;
     }
 
@@ -68,7 +92,6 @@ class Question
     public function removeQuestionOption(QuestionOption $questionOption): static
     {
         if ($this->questionOptions->removeElement($questionOption)) {
-            // set the owning side to null (unless already changed)
             if ($questionOption->getQuestion() === $this) {
                 $questionOption->setQuestion(null);
             }

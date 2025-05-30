@@ -1,0 +1,115 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edytuj pytania - {{ survey.title }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h1>Ankieta: {{ survey.title }}</h1>
+
+        <p><a href="{{ path('app_dashboard') }}" class="btn btn-secondary">← Powrót do dashboardu</a></p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>Dodaj pytanie</h3>
+                    </div>
+                    <div class="card-body">
+                        {{ form_start(form) }}
+                        {{ form_row(form.text) }}
+                        {{ form_row(form.questionType) }}
+                        <button class="btn btn-primary">Dodaj pytanie</button>
+                        {{ form_end(form) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Istniejące pytania</h3>
+            </div>
+            <div class="card-body">
+                {% if questions is empty %}
+                    <p class="text-muted">Brak pytań w tej ankiecie.</p>
+                {% else %}
+                    {% for question in questions %}
+                        <div class="question-item border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5>{{ question.text }}</h5>
+                                    <small class="text-muted">
+                                        Typ: {{ question.questionType ? question.questionType.label : 'Nie określono' }}
+                                    </small>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            onclick="toggleOptions({{ question.id }})">
+                                        Opcje odpowiedzi
+                                    </button>
+                                    <a href="{{ path('question_delete', {'id': question.id}) }}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Czy na pewno chcesz usunąć to pytanie?')">
+                                        Usuń
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div id="options-{{ question.id }}" class="options-section mt-3" style="display: none;">
+                                <!-- Istniejące opcje -->
+                                {% if question.questionOptions is not empty %}
+                                    <h6>Istniejące opcje:</h6>
+                                    <ul class="list-group mb-3">
+                                        {% for option in question.questionOptions %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                {{ option.text }}
+                                                <a href="{{ path('question_option_delete', {'id': option.id}) }}"
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   onclick="return confirm('Czy na pewno chcesz usunąć tę opcję?')">
+                                                    ×
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+
+                                <!-- Formularz dodawania nowej opcji -->
+                                {% if question.questionType and question.questionType.name in ['single_choice', 'multiple_choice'] %}
+                                    <div class="add-option-form">
+                                        <h6>Dodaj nową opcję:</h6>
+                                        <form action="{{ path('question_option_add', {'questionId': question.id}) }}"
+                                              method="post" class="d-flex gap-2">
+                                            <input type="text"
+                                                   name="option_text"
+                                                   class="form-control"
+                                                   placeholder="Tekst opcji odpowiedzi"
+                                                   required>
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                Dodaj opcję
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">
+                                        <small>Für ten typ pytania nie można dodawać opcji odpowiedzi.</small>
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleOptions(questionId) {
+            const optionsDiv = document.getElementById(`options-${questionId}`);
+            if (optionsDiv.style.display === 'none') {
+                optionsDiv.style.display = 'block';
+            } else {
+                optionsDiv.style.display = 'none';
+            }
+        }
+    </script>
+{% endblock %}
