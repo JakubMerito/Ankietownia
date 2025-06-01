@@ -8,6 +8,233 @@
 
         <p><a href="{{ path('app_dashboard') }}" class="btn btn-secondary">← Powrót do dashboardu</a></p>
 
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Status ankiety</h4>
+                        <span class="badge {{ survey.isActive ? 'bg-success' : 'bg-secondary' }}">
+                            {{ survey.isActive ? 'AKTYWNA' : 'NIEAKTYWNA' }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-1">
+                                    {% if survey.isActive %}
+                                        <strong>Ankieta jest dostępna publicznie.</strong>
+                                    {% else %}
+                                        <strong>Ankieta nie jest dostępna dla użytkowników.</strong>
+                                    {% endif %}
+                                </p>
+                                {% if survey.isActive %}
+                                    <small class="text-muted">
+                                        Link do ankiety:
+                                        <code>{{ url('public_survey_show', {'id': survey.id}) }}</code>
+                                        <button class="btn btn-sm btn-outline-secondary ms-2"
+                                                onclick="copyToClipboard('{{ url('public_survey_show', {'id': survey.id}) }}')">
+                                            Skopiuj link
+                                        </button>
+                                    </small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <form action="{{ path('survey_toggle_active', {'id': survey.id}) }}"
+                                      method="post" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('survey_toggle_' ~ survey.id) }}">
+                                    {% if survey.isActive %}
+                                        <button type="submit"
+                                                class="btn btn-warning"
+                                                onclick="return confirm('Czy na pewno chcesz dezaktywować tę ankietę? Użytkownicy nie będą mogli jej wypełniać.')">
+                                            <i class="fas fa-pause"></i> Dezaktywuj ankietę
+                                        </button>
+                                    {% else %}
+                                        <button type="submit"
+                                                class="btn btn-success"
+                                                onclick="return confirm('Czy na pewno chcesz aktywować tę ankietę? Stanie się dostępna publicznie.')">
+                                            <i class="fas fa-play"></i> Aktywuj ankietę
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        {% if responses is defined and responses is not empty %}
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4><i class="fas fa-chart-bar"></i> Wyniki ankiety</h4>
+                            <div>
+                                <span class="badge bg-info">{{ responses|length }} odpowiedzi</span>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="toggleResults()">
+                                    <i class="fas fa-eye"></i> Pokaż/Ukryj wyniki
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="results-section" style="display: none;">
+                            {% if surveyStats is defined %}
+                                <div class="row mb-4">
+                                    <div class="col-md-3">
+                                        <div class="stat-card text-center p-3 bg-light rounded">
+                                            <h3 class="text-primary">{{ surveyStats.totalResponses }}</h3>
+                                            <small class="text-muted">Łączna liczba odpowiedzi</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card text-center p-3 bg-light rounded">
+                                            <h3 class="text-success">{{ surveyStats.completedResponses }}</h3>
+                                            <small class="text-muted">Ukończone ankiety</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card text-center p-3 bg-light rounded">
+                                            <h3 class="text-warning">{{ surveyStats.partialResponses }}</h3>
+                                            <small class="text-muted">Częściowo wypełnione</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="stat-card text-center p-3 bg-light rounded">
+                                            <h3 class="text-info">{{ ((surveyStats.completedResponses / surveyStats.totalResponses) * 100)|round(1) }}%</h3>
+                                            <small class="text-muted">Wskaźnik ukończenia</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% for question in questions %}
+                                {% if questionResults[question.id] is defined %}
+                                    <div class="question-results mb-4">
+                                        <h5>{{ question.text }}</h5>
+                                        <small class="text-muted mb-3 d-block">
+                                            Typ: {{ question.questionType ? question.questionType.label : 'Nie określono' }} |
+                                            Odpowiedzi: {{ questionResults[question.id].totalAnswers }}
+                                        </small>
+
+                                        {% if question.questionType.name in ['single_choice', 'multiple_choice'] %}
+                                            <div class="choice-results">
+                                                {% for optionResult in questionResults[question.id].options %}
+                                                    <div class="option-result mb-2">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <span>{{ optionResult.text }}</span>
+                                                            <span class="badge bg-primary">
+                                                                {{ optionResult.count }} ({{ optionResult.percentage }}%)
+                                                            </span>
+                                                        </div>
+                                                        <div class="progress" style="height: 20px;">
+                                                            <div class="progress-bar"
+                                                                 role="progressbar"
+                                                                 style="width: {{ optionResult.percentage }}%"
+                                                                 aria-valuenow="{{ optionResult.percentage }}"
+                                                                 aria-valuemin="0"
+                                                                 aria-valuemax="100">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+
+                                        {% elseif question.questionType.name == 'text' %}
+                                            <div class="text-results">
+                                                <p><strong>Przykładowe odpowiedzi:</strong></p>
+                                                <div class="text-answers" style="max-height: 200px; overflow-y: auto;">
+                                                    {% for textAnswer in questionResults[question.id].textAnswers|slice(0, 10) %}
+                                                        <div class="alert alert-light py-2 mb-2">
+                                                            <small>{{ textAnswer.answer }}</small>
+                                                            <br><small class="text-muted">{{ textAnswer.createdAt|date('d.m.Y H:i') }}</small>
+                                                        </div>
+                                                    {% endfor %}
+                                                    {% if questionResults[question.id].textAnswers|length > 10 %}
+                                                        <small class="text-muted">
+                                                            ...i {{ questionResults[question.id].textAnswers|length - 10 }} więcej odpowiedzi
+                                                        </small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+
+                                        {% elseif question.questionType.name == 'number' %}
+                                            <div class="number-results">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="stat-box text-center p-2 bg-light rounded">
+                                                            <strong>{{ questionResults[question.id].stats.average|round(2) }}</strong>
+                                                            <br><small>Średnia</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="stat-box text-center p-2 bg-light rounded">
+                                                            <strong>{{ questionResults[question.id].stats.min }}</strong>
+                                                            <br><small>Minimum</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="stat-box text-center p-2 bg-light rounded">
+                                                            <strong>{{ questionResults[question.id].stats.max }}</strong>
+                                                            <br><small>Maksimum</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="stat-box text-center p-2 bg-light rounded">
+                                                            <strong>{{ questionResults[question.id].stats.median }}</strong>
+                                                            <br><small>Mediana</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        {% elseif question.questionType.name == 'rating' %}
+                                            <div class="rating-results">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span>Średnia ocena:</span>
+                                                    <span class="badge bg-warning fs-6">
+                                                        {{ questionResults[question.id].averageRating|round(1) }}/5
+                                                        <i class="fas fa-star"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="rating-distribution">
+                                                    {% for i in 1..5 %}
+                                                        {% set ratingCount = questionResults[question.id].ratingDistribution[i] ?? 0 %}
+                                                        {% set percentage = questionResults[question.id].totalAnswers > 0 ? (ratingCount / questionResults[question.id].totalAnswers * 100)|round(1) : 0 %}
+                                                        <div class="rating-bar mb-1">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span>{{ i }} <i class="fas fa-star text-warning"></i></span>
+                                                                <span class="badge bg-secondary">{{ ratingCount }} ({{ percentage }}%)</span>
+                                                            </div>
+                                                            <div class="progress" style="height: 15px;">
+                                                                <div class="progress-bar bg-warning"
+                                                                     style="width: {{ percentage }}%">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <hr>
+                                {% endif %}
+                            {% endfor %}
+
+                            <div class="mt-4">
+                                <h6>Eksport wyników:</h6>
+                                <div class="btn-group">
+                                    <a href="{{ path('survey_export_csv', {'id': survey.id}) }}"
+                                       class="btn btn-outline-success">
+                                        <i class="fas fa-file-csv"></i> Eksport CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-md-6">
                 <div class="card mb-4">
@@ -31,7 +258,10 @@
             </div>
             <div class="card-body">
                 {% if questions is empty %}
-                    <p class="text-muted">Brak pytań w tej ankiecie.</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Brak pytań w tej ankiecie. Dodaj pierwsze pytanie, aby móc aktywować ankietę.
+                    </div>
                 {% else %}
                     {% for question in questions %}
                         <div class="question-item border rounded p-3 mb-3">
@@ -40,6 +270,9 @@
                                     <h5>{{ question.text }}</h5>
                                     <small class="text-muted">
                                         Typ: {{ question.questionType ? question.questionType.label : 'Nie określono' }}
+                                        {% if question.isRequired %}
+                                            <span class="badge bg-danger ms-1">Wymagane</span>
+                                        {% endif %}
                                     </small>
                                 </div>
                                 <div class="btn-group">
@@ -91,7 +324,7 @@
                                     </div>
                                 {% else %}
                                     <p class="text-muted">
-                                        <small>Für ten typ pytania nie można dodawać opcji odpowiedzi.</small>
+                                        <small>Dla tego typu pytania nie można dodawać opcji odpowiedzi.</small>
                                     </p>
                                 {% endif %}
                             </div>
@@ -111,5 +344,71 @@
                 optionsDiv.style.display = 'none';
             }
         }
+
+        function toggleResults() {
+            const resultsSection = document.getElementById('results-section');
+            if (resultsSection.style.display === 'none') {
+                resultsSection.style.display = 'block';
+            } else {
+                resultsSection.style.display = 'none';
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Pokaż komunikat o skopiowaniu
+                const originalBtn = event.target;
+                const originalText = originalBtn.textContent;
+                originalBtn.textContent = 'Skopiowano!';
+                originalBtn.classList.add('btn-success');
+                originalBtn.classList.remove('btn-outline-secondary');
+
+                setTimeout(() => {
+                    originalBtn.textContent = originalText;
+                    originalBtn.classList.remove('btn-success');
+                    originalBtn.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
     </script>
+
+    <script>
+        function toggleResults() {
+            const resultsSection = document.getElementById('results-section');
+            if (resultsSection.style.display === 'none') {
+                resultsSection.style.display = 'block';
+            } else {
+                resultsSection.style.display = 'none';
+            }
+        }
+    </script>
+
+    <style>
+        .stat-card, .stat-box {
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover, .stat-box:hover {
+            transform: translateY(-2px);
+        }
+
+        .question-results {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+        }
+
+        .progress {
+            background-color: #e9ecef;
+        }
+
+        .rating-bar {
+            font-size: 0.9em;
+        }
+
+        .text-answers {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 10px;
+        }
+    </style>
 {% endblock %}
