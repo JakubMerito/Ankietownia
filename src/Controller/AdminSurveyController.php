@@ -36,7 +36,6 @@ class AdminSurveyController extends AbstractController
     #[Route('/{id}/toggle-status', name: 'admin_survey_toggle_status', methods: ['POST'])]
     public function toggleStatus(Survey $survey): Response
     {
-        // Sprawdź czy użytkownik jest właścicielem ankiety
         if ($survey->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
@@ -54,7 +53,6 @@ class AdminSurveyController extends AbstractController
     #[Route('/{id}/results', name: 'admin_survey_results')]
     public function results(Survey $survey): Response
     {
-        // Sprawdź czy użytkownik jest właścicielem ankiety
         if ($survey->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
@@ -62,13 +60,11 @@ class AdminSurveyController extends AbstractController
         $responses = $this->surveyResponseRepository->findCompletedBySurvey($survey);
         $totalResponses = count($responses);
 
-        // Przygotuj statystyki dla każdego pytania
         $questionStats = [];
         foreach ($survey->getQuestions() as $question) {
             $questionType = $question->getQuestionType() ? $question->getQuestionType()->getName() : 'single_choice';
 
             if (in_array($questionType, ['single_choice', 'multiple_choice'])) {
-                // Statystyki dla pytań wyboru
                 $stats = $this->questionResponseRepository->getStatisticsForSingleChoice($question);
                 $questionStats[$question->getId()] = [
                     'type' => 'choice',
@@ -76,7 +72,6 @@ class AdminSurveyController extends AbstractController
                     'total' => array_sum(array_column($stats, 'count'))
                 ];
             } else {
-                // Odpowiedzi tekstowe
                 $textResponses = $this->questionResponseRepository->getTextResponsesForQuestion($question);
                 $questionStats[$question->getId()] = [
                     'type' => 'text',
@@ -97,7 +92,6 @@ class AdminSurveyController extends AbstractController
     #[Route('/{id}/share', name: 'admin_survey_share')]
     public function share(Survey $survey): Response
     {
-        // Sprawdź czy użytkownik jest właścicielem ankiety
         if ($survey->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
@@ -113,24 +107,20 @@ class AdminSurveyController extends AbstractController
     #[Route('/{id}/responses/export', name: 'admin_survey_export')]
     public function exportResponses(Survey $survey): Response
     {
-        // Sprawdź czy użytkownik jest właścicielem ankiety
         if ($survey->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
         }
 
         $responses = $this->surveyResponseRepository->findCompletedBySurvey($survey);
 
-        // Przygotuj dane do CSV
         $csvData = [];
         $headers = ['ID odpowiedzi', 'Data utworzenia', 'Data ukończenia'];
 
-        // Dodaj nagłówki pytań
         foreach ($survey->getQuestions() as $question) {
             $headers[] = $question->getText();
         }
         $csvData[] = $headers;
 
-        // Dodaj dane odpowiedzi
         foreach ($responses as $response) {
             $row = [
                 $response->getId(),
@@ -138,7 +128,6 @@ class AdminSurveyController extends AbstractController
                 $response->getCompletedAt() ? $response->getCompletedAt()->format('Y-m-d H:i:s') : ''
             ];
 
-            // Dodaj odpowiedzi na pytania
             foreach ($survey->getQuestions() as $question) {
                 $questionResponses = $response->getQuestionResponses()->filter(
                     fn($qr) => $qr->getQuestion() === $question
@@ -158,7 +147,7 @@ class AdminSurveyController extends AbstractController
             $csvData[] = $row;
         }
 
-        // Utwórz odpowiedź CSV
+
         $filename = 'ankieta_' . $survey->getId() . '_' . date('Y-m-d') . '.csv';
 
         $response = new Response();
@@ -167,7 +156,7 @@ class AdminSurveyController extends AbstractController
 
         $output = fopen('php://temp', 'w+');
 
-        // Dodaj BOM dla UTF-8
+
         fputs($output, "\xEF\xBB\xBF");
 
         foreach ($csvData as $row) {

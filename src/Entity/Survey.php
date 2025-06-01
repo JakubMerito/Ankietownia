@@ -109,7 +109,6 @@ class Survey
     public function removeQuestion(Question $question): static
     {
         if ($this->questions->removeElement($question)) {
-            // set the owning side to null (unless already changed)
             if ($question->getSurvey() === $this) {
                 $question->setSurvey(null);
             }

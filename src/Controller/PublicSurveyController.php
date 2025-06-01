@@ -24,7 +24,6 @@ class PublicSurveyController extends AbstractController
     #[Route('/{id}', name: 'public_survey_show', methods: ['GET'])]
     public function show(Survey $survey): Response
     {
-        // Sprawdź czy ankieta jest aktywna
         if (!$survey->isActive()) {
             throw $this->createNotFoundException('Ankieta nie jest dostępna.');
         }
@@ -48,7 +47,6 @@ class PublicSurveyController extends AbstractController
         }
 
         try {
-            // Walidacja wymaganych pól
             $requiredQuestions = $this->entityManager->getRepository(Question::class)
                 ->findBy(['survey' => $survey, 'isRequired' => true]);
 
@@ -61,7 +59,6 @@ class PublicSurveyController extends AbstractController
                 }
             }
 
-            // Stwórz nową sesję odpowiedzi
             $surveyResponse = new SurveyResponse();
             $surveyResponse->setSurvey($survey);
             $surveyResponse->setIpAddress($request->getClientIp());
@@ -69,7 +66,6 @@ class PublicSurveyController extends AbstractController
 
             $this->entityManager->persist($surveyResponse);
 
-            // Przetwórz odpowiedzi
             foreach ($data['responses'] as $questionId => $responseData) {
                 $question = $this->entityManager->getRepository(Question::class)->find($questionId);
 
@@ -77,7 +73,6 @@ class PublicSurveyController extends AbstractController
                     continue;
                 }
 
-                // Dla pytań wielokrotnego wyboru
                 if (is_array($responseData)) {
                     foreach ($responseData as $optionId) {
                         if (is_numeric($optionId)) {
@@ -93,19 +88,16 @@ class PublicSurveyController extends AbstractController
                         }
                     }
                 } else {
-                    // Dla pytań jednokrotnego wyboru lub tekstowych
                     $questionResponse = new QuestionResponse();
                     $questionResponse->setSurveyResponse($surveyResponse);
                     $questionResponse->setQuestion($question);
 
                     if (is_numeric($responseData)) {
-                        // Odpowiedź z opcji
                         $option = $this->entityManager->getRepository(QuestionOption::class)->find($responseData);
                         if ($option && $option->getQuestion() === $question) {
                             $questionResponse->setQuestionOption($option);
                         }
                     } else {
-                        // Odpowiedź tekstowa
                         $questionResponse->setTextResponse((string)$responseData);
                     }
 
@@ -113,7 +105,6 @@ class PublicSurveyController extends AbstractController
                 }
             }
 
-            // Oznacz jako ukończone
             $surveyResponse->setIsCompleted(true);
             $surveyResponse->setCompletedAt(new \DateTime());
 
