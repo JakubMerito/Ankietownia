@@ -40,4 +40,16 @@ class QuestionTypeRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    public function findAllAsChoices(): array
+    {
+        $types = $this->findAll();
+        $choices = [];
+
+        foreach ($types as $type) {
+            $choices[$type->getLabel()] = $type->getName();
+        }
+
+        return $choices;
+    }
 }

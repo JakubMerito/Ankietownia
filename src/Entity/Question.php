@@ -28,6 +28,9 @@ class Question
     #[ORM\OneToMany(mappedBy: 'question', targetEntity: QuestionOption::class, cascade: ['remove'])]
     private Collection $questionOptions;
 
+    #[ORM\Column]
+    private bool $isRequired = false;
+
     public function __construct()
     {
         $this->questionOptions = new ArrayCollection();
@@ -97,6 +100,17 @@ class Question
             }
         }
 
+        return $this;
+    }
+
+    public function isRequired(): bool
+    {
+        return $this->isRequired;
+    }
+
+    public function setIsRequired(bool $isRequired): static
+    {
+        $this->isRequired = $isRequired;
         return $this;
     }
 }

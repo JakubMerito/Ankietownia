@@ -93,4 +93,37 @@ class QuestionController extends AbstractController
 
         return $this->redirectToRoute('survey_questions', ['id' => $surveyId]);
     }
+
+    #[Route('/survey/{id}/toggle-active', name: 'survey_toggle_active', methods: ['POST'])]
+    public function toggleActive(Survey $survey, Request $request, EntityManagerInterface $em): Response
+    {
+        // Sprawdź token CSRF
+        if (!$this->isCsrfTokenValid('survey_toggle_' . $survey->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Nieprawidłowy token bezpieczeństwa.');
+            return $this->redirectToRoute('survey_questions', ['id' => $survey->getId()]);
+        }
+
+        // Przed aktywacją sprawdź czy ankieta ma pytania
+        if (!$survey->isActive() && $survey->getQuestions()->isEmpty()) {
+            $this->addFlash('error', 'Nie można aktywować ankiety bez pytań. Dodaj przynajmniej jedno pytanie.');
+            return $this->redirectToRoute('survey_questions', ['id' => $survey->getId()]);
+        }
+
+        // Przełącz status
+        $survey->setIsActive(!$survey->isActive());
+
+        try {
+            $em->flush();
+
+            if ($survey->isActive()) {
+                $this->addFlash('success', 'Ankieta została aktywowana i jest dostępna publicznie.');
+            } else {
+                $this->addFlash('success', 'Ankieta została dezaktywowana.');
+            }
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Wystąpił błąd podczas zmiany statusu ankiety.');
+        }
+
+        return $this->redirectToRoute('survey_questions', ['id' => $survey->getId()]);
+    }
 }

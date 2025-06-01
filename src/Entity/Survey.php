@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\SurveyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SurveyRepository::class)]
@@ -31,9 +32,19 @@ class Survey
     #[ORM\OneToMany(targetEntity: Question::class, mappedBy: 'survey', orphanRemoval: true)]
     private Collection $questions;
 
+    #[ORM\Column]
+    private bool $isActive = false;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\OneToMany(mappedBy: 'survey', targetEntity: SurveyResponse::class)]
+    private Collection $surveyResponses;
+
     public function __construct()
     {
         $this->questions = new ArrayCollection();
+        $this->surveyResponses = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -104,6 +115,55 @@ class Survey
             }
         }
 
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, SurveyResponse>
+     */
+    public function getSurveyResponses(): Collection
+    {
+        return $this->surveyResponses;
+    }
+
+    public function addSurveyResponse(SurveyResponse $surveyResponse): static
+    {
+        if (!$this->surveyResponses->contains($surveyResponse)) {
+            $this->surveyResponses->add($surveyResponse);
+            $surveyResponse->setSurvey($this);
+        }
+        return $this;
+    }
+
+    public function removeSurveyResponse(SurveyResponse $surveyResponse): static
+    {
+        if ($this->surveyResponses->removeElement($surveyResponse)) {
+            if ($surveyResponse->getSurvey() === $this) {
+                $surveyResponse->setSurvey(null);
+            }
+        }
         return $this;
     }
 }
